@@ -2,13 +2,18 @@ from flask import Flask, render_template, request, redirect
 
 from cloudipsp import Api, Checkout
 from flask_sqlalchemy import SQLAlchemy
-# from piastrixlib import PiastrixClient
+from piastrixlib import PiastrixClient
 
 
 app = Flask(__name__)
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///shop.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 db = SQLAlchemy(app)
+
+secret_key = 'YourSecretKey'
+shop_id = 'YourShopID'
+
+piastrix = PiastrixClient(shop_id, secret_key)
 
 
 # piastrix = PiastrixClient(1, "wqewe2e32e2e3")
