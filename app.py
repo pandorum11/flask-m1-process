@@ -10,10 +10,7 @@ app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///shop.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 db = SQLAlchemy(app)
 
-secret_key = 'YourSecretKey'
-shop_id = 'YourShopID'
 
-piastrix = PiastrixClient(shop_id, secret_key)
 
 
 # piastrix = PiastrixClient(1, "wqewe2e32e2e3")
@@ -50,17 +47,19 @@ def about() :
 
 @app.route('/buy/<int:id>')
 def item_buy(id):
-    item = Item.query.get(id)
+	item = Item.query.get(id)
+	secret_key = 'YourSecretKey'
+	shop_id = 'YourShopID'
 
-    api = Api(merchant_id=1396424,
-        secret_key='test')
-    checkout = Checkout(api=api)
-    data = {
-        "currency": "RUB",
-        "amount": str(item.price) + "00"
-    }
-    url = checkout.url(data).get('checkout_url')
-    return redirect(url)
+	api = PiastrixClient(shop_id, secret_key)
+
+	amount = '1000'
+	currency = '840'
+	payway = 'card_rub'
+	shop_order_id = str(id)
+	extra_fields = {'description': 'Test description'}
+	response = api.invoice(amount, currency, shop_order_id, payway, extra_fields)
+	return redirect(response)
     
 # @app.route('/create', methods=['POST', 'GET'])
 # def create():
