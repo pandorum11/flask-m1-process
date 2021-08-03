@@ -1,6 +1,5 @@
 from flask import Flask, render_template, request, redirect, flash
 from flask_sqlalchemy import SQLAlchemy
-from piastrixlib import PiastrixClient
 from hashlib import sha256
 import requests
 from datetime import datetime
@@ -153,6 +152,8 @@ def item_buy():
 		return redirect('/')
 	
 	return redirect(url)
+
+# --------- add a good ------------------------------------------------------------
     
 # @app.route('/create', methods=['POST', 'GET'])
 # def create():
