@@ -1,0 +1,51 @@
+{%extends 'base.html'%}
+
+{%block title%}
+Advcash paycard
+{%endblock%}
+
+{%block body%}
+<div class="container mt-5">
+<h1>Type of pay: {{json_r['data']['data']['ac_ps']}}</h1>
+ <!--Fragment of HTML page with the payment request form-->
+<form method="{{json_r['data']['method']}}" id="form_buy_submit" action="{{json_r['data']['url']}}">
+<div class="input-group">
+<input type="text" class="form-control" aria-label="Dollar amount (with dot and two decimal places)" name="ac_account_email" value="{{json_r['data']['data']['ac_account_email']}}" readonly>
+<span class="input-group-text">AC_account_email</span>
+</div><br>
+<div class="input-group">
+<input type="text" class="form-control" aria-label="Dollar amount (with dot and two decimal places)" name="ac_sci_name" value="{{json_r['data']['data']['ac_sci_name']}}" readonly>
+<span class="input-group-text">AC_sci_name</span>
+</div><br>
+<div class="input-group">
+  <input type="text" class="form-control" aria-label="Dollar amount (with dot and two decimal places)" name="ac_amount" value="{{json_r['data']['data']['ac_amount']}}" readonly>
+  <span class="input-group-text">{{json_r['data']['data']['ac_currency']}}</span>
+  <input type="hidden" name="ac_currency" value="{{json_r['data']['data']['ac_currency']}}" readonly>
+</div><br>
+
+<div class="input-group">
+<input type="text" class="form-control" aria-label="Dollar amount (with dot and two decimal places)" name="ac_order_id" value="{{json_r['data']['data']['ac_order_id']}}" readonly>
+<span class="input-group-text">AC_order_id</span>
+</div><br>
+<div class="input-group">
+<input type="text" class="form-control" aria-label="Dollar amount (with dot and two decimal places)" name="ac_sign"
+value="{{json_r['data']['data']['ac_sign']}}" readonly>
+<span class="input-group-text">AC_sign</span>
+</div><br>
+<div class="input-group">
+<input type="text" class="form-control" aria-label="Dollar amount (with dot and two decimal places)" name="ac_sub_merchant_url"
+value="{{json_r['data']['data']['ac_sub_merchant_url']}}" readonly>
+<span class="input-group-text">AC_sub_merchant_url</span>
+</div><br>
+<div class="input-group">
+<input type="text" class="form-control" aria-label="Dollar amount (with dot and two decimal places)" name="ac_comments" value="{{descr}}" readonly>
+<span class="input-group-text">AC_comments</span>
+</div><br>
+<!-- Merchant custom fields -->
+<!-- <input type="hidden" name="operation_id" value="234235436"> -->
+<!-- <input type="hidden" name="login" value="denis"> -->
+<button form="form_buy_submit" class="btn btn-primary" type="submit">Подтвердите покупку</button>
+</form>
+<!--Fragment of HTML page with the payment request form--> 
+</div>
+{%endblock%}

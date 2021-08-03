@@ -1,7 +1,7 @@
 {% extends 'base.html' %}
 
 {% block title %}
-<title>Flask store test dev</title>
+Flask store test dev
 {% endblock %}
 
 {% block body %}
@@ -14,32 +14,45 @@
     </div>
 
 <main>
+    
+    {% for message in get_flashed_messages() %}
+    <div class="alert alert-warning" role="alert">
+    Error: {{ message }}
+    </div>
+    {% endfor %}
+    
+    
     {% for el in data %}
     <div class="card text-center">
       <div class="card-header">
         Featured
       </div>
-      <h1 class="card-title pricing-card-title">{{el.price}}  <small class="text-muted fw-light">RUB</small></h1>
+      <h1 class="card-title pricing-card-title">{{el.price}}  <small class="text-muted fw-light">CASH</small></h1>
       <div class="card-body">
         <h5 class="card-title">{{el.title}}</h5>
         <p class="card-text">{{el.title}}  some text</p>
+        <br>
+
+        <form method="post" id="form_buy_submit">
+        <label for="exampleFormControlTextarea1" class="form-label">Add a decription</label>
+        <textarea class="form-control" id="exampleFormControlTextarea1" rows="3" name="description"></textarea><br>
+        <input type="number" step="0.01"  id="typeNumber" class="form-control" name="amount"/><br>
+        <select form="form_buy_submit" class="form-control" id="state" name="cash_selector" required="">
+                  <option value="978">EUR</option>
+                  <option value="840">USD</option>
+                  <option value="643">RUR</option>
+        </select><br>
         <div class="d-grid gap-2">
-          <a href="/buy/{{el.id}}" class="btn btn-primary">Немедленная покупка товара</a>
+          <button form="form_buy_submit" class="btn btn-primary" type="submit">Немедленная покупка товара</button>
         </div><br>
-        <select class="form-control" id="state" required="">
-                  <option value="money">Choose the money</option>
-                  <option value="advcash_rub">RUB</option>
-                  <option>EUR</option>
-                  <option>USD</option>
-        </select>
+        </form>
       </div>
+      
       <div class="card-footer text-muted">
       TODAY
       </div>
     </div>
     {%endfor%}
-   <form name="Pay" method="post" action="https://pay.piastrix.com/ru/pay" acceptcharset="UTF-8"> <input type="hidden" name="amount" value="10.00"/>
-
  
 
     <h2 class="display-6 text-center mb-4">Compare plans</h2>
