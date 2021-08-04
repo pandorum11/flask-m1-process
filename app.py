@@ -26,7 +26,6 @@ db = SQLAlchemy(app)
 class LogRecord(db.Model) :
 
 	"""
-	class LogRecord(db.Model)
 
 	id	| currency	| amount	| DATETIME	| description	| is_valid
 
