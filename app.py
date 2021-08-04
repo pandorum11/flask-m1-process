@@ -28,9 +28,9 @@ class LogRecord(db.Model) :
 	"""
 	class LogRecord(db.Model)
 
-	id	|	currency 	|	amount	|	DATETIME	|	description	 |	is_valid
+	id	| currency	| amount	| DATETIME	| description	| is_valid
 
-	int |	string		|	Numeric	|	DateTime	|	text <=  300 |	Boolean
+	int	| string	| Numeric	| DateTime	| text <=  300	| Boolean
 
 
 	Model of database for operations log.
@@ -51,6 +51,7 @@ class LogRecord(db.Model) :
 # ------------ LOG ORDER MAKER --------------------------------------------
 
 def log_db_custom_maker(currency, amount, description, is_valid) :
+
 	"""
 	write log record to DB
 	log_db_custom_maker(currency, amount, description, is_valid)
