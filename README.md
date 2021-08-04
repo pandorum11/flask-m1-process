@@ -7,7 +7,7 @@
 # using python-3.9.6
 #
 
-FLASK sevise which produse 3 tipes of payment :
+FLASK service which produse 3 tipes of payment :
 
 PAY		-	https://pay.piastrix.com/ru/pay 			- amount:currency:shop_id:shop_order_idkey
 

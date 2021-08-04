@@ -218,9 +218,7 @@ def item_buy():
 	
 	if request.method == "POST":
 
-		objdb = LogRecord.query.order_by(LogRecord.id.desc()).first()
-
-		url = ''
+		objdb = LogRecord.query.order_by(LogRecord.id).first()
 
 		if float(request.form['amount']) < 10 :
 			flash("Minimus amount is 10.00 .")
@@ -233,6 +231,8 @@ def item_buy():
 		if float(len(request.form['description'])) > 500 :
 			flash("Maximum lenth of description is 500 signs .")
 			return redirect('/')
+
+		# valve for empty DB
 
 		if objdb != None :
 			shop_order_id = int(objdb.id) + 1
