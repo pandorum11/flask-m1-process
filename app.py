@@ -58,7 +58,7 @@ def log_db_custom_maker(currency, amount, description, is_valid) :
 
 def post_pay_for_EUR(amount,currency,shop_id,shop_order_id,description,key) :
 
-	SHAREADY = sha256(("%s:%s:%s:%s%s"\
+	SHAREADY = sha256(("%s:%s:%s:%s%s"
 		%(
 			amount,
 			currency,
@@ -85,7 +85,7 @@ def post_pay_for_EUR(amount,currency,shop_id,shop_order_id,description,key) :
 def post_pay_for_USD(amount,payer_currency,shop_currency,shop_id,
 		shop_order_id,description,key) :
 
-	SHAREADY = sha256(("%s:%s:%s:%s:%s%s"\
+	SHAREADY = sha256(("%s:%s:%s:%s:%s%s"
 		%(
 			payer_currency,
 			amount,
@@ -123,7 +123,7 @@ def invoise_pay_for_ADVcash(amount,currency,shop_id,shop_order_id,
 
 	payway = 'advcash_rub'
 
-	SHAREADY = sha256(("%s:%s:%s:%s:%s%s"\
+	SHAREADY = sha256(("%s:%s:%s:%s:%s%s"
 		%(
 			amount,
 			currency,
@@ -148,6 +148,7 @@ def invoise_pay_for_ADVcash(amount,currency,shop_id,shop_order_id,
 	if result_json['result'] == True :
 		log_db_custom_maker(currency,amount,description,True)
 		return "advcash_submit_card.html", result_json, description
+
 	else :
 		log_db_custom_maker(currency,amount,description,False)
 		flash(result_json)
@@ -157,18 +158,19 @@ def invoise_pay_for_ADVcash(amount,currency,shop_id,shop_order_id,
 
 # ------------- ROUTES BLOCK ----------------------------------------------
 
-@app.route('/')
-def index() :
-	return render_template('index.html')
-
-@app.route('/', methods=['POST'])
+@app.route('/', methods=['POST', 'GET'])
 def item_buy():
 
-	objdb = LogRecord.query.order_by(LogRecord.id.desc()).first()
+	
+	if request.method == "GET":
 
-	url = ''
-
+		return render_template("index.html")
+	
 	if request.method == "POST":
+
+		objdb = LogRecord.query.order_by(LogRecord.id.desc()).first()
+
+		url = ''
 
 		if float(request.form['amount']) < 10 :
 			flash("Minimus amount is 10.00 .")
