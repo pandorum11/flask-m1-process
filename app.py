@@ -4,27 +4,24 @@ from hashlib import sha256
 import requests
 from datetime import datetime
 
-
-
-secret_key = "SecretKey01"
-global_shop_id = "5"
+# -------------------------------------------------------------------------
 
 app = Flask(__name__)
+
 app.secret_key = '4632c26d48e9e2fd3069'
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///shop.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+
+# ------------ STORE SECURITY ---------------------------------------------
+
+app.config['SECRET_KEY_FOR_STORE'] = "SecretKey01"
+app.config['GLOBAL_SHOP_ID'] = "5"
+
 db = SQLAlchemy(app)
 
+# -------------------------------------------------------------------------
 
-class Item(db.Model) :
-	id = db.Column(db.Integer, primary_key=True)
-	title = db.Column(db.String(100), nullable=False)
-	price = db.Column(db.Integer, nullable=False)
-	isActive = db.Column(db.Boolean, default=True)
-	# text = db.Column(db.Text, nullable=False)
-
-	def __repr__(self):
-		return f"Note : {self.title}"
+# ------------ 1 TABLE FOR LOG --------------------------------------------
 
 class LogRecord(db.Model) :
 	id = db.Column(db.Integer, primary_key=True)
@@ -37,30 +34,137 @@ class LogRecord(db.Model) :
 	def __repr__(self):
 		return f"Note : {self.id}"
 
-# ------------ LOG DB -----------------------------------------------------
+# -------------------------------------------------------------------------
+
+# ------------ LOG ORDER MAKER --------------------------------------------
 
 def log_db_custom_maker(currency, amount, description, is_valid) :
-	logvar = LogRecord(currency=currency, amount=amount, DATETIME=datetime.utcnow(),\
-					description=description, is_valid=is_valid)
+	logvar = LogRecord(
+		currency=currency,
+		amount=amount,
+		DATETIME=datetime.utcnow(),
+		description=description,
+		is_valid=is_valid
+		)
+
 	db.session.add(logvar)
 	db.session.commit()
+
 	return
 
 # -------------------------------------------------------------------------
 
+# ------------- generation requests----------------------------------------
+
+def post_pay_for_EUR(amount,currency,shop_id,shop_order_id,description,key) :
+
+	SHAREADY = sha256(("%s:%s:%s:%s%s"\
+		%(
+			amount,
+			currency,
+			shop_id,
+			shop_order_id,
+			key)
+		).encode('utf-8')).hexdigest()
+
+	response = requests.post('https://pay.piastrix.com/ru/pay', params=
+		{
+			'amount' : amount,
+			'currency' : currency,
+			'shop_id' : shop_id,
+			'sign' : SHAREADY,
+			'shop_order_id' : shop_order_id,
+			"description": description
+		})
+
+	log_db_custom_maker(currency,amount,description,True)
+
+	return response.url
+
+
+def post_pay_for_USD(amount,payer_currency,shop_currency,shop_id,
+		shop_order_id,description,key) :
+
+	SHAREADY = sha256(("%s:%s:%s:%s:%s%s"\
+		%(
+			payer_currency,
+			amount,
+			shop_currency,
+			shop_id,
+			shop_order_id,
+			key)
+		).encode('utf-8')).hexdigest()
+
+	response = requests.post('https://core.piastrix.com/bill/create', json=
+		{
+			"description": description,
+			"payer_currency": payer_currency,
+			"shop_amount": amount,
+			"shop_currency": shop_currency,
+			'shop_id' : shop_id,
+			"shop_order_id": shop_order_id,
+			"sign": SHAREADY	
+		})
+
+	result_json = response.json()
+
+	if result_json['result'] == True :
+		log_db_custom_maker(payer_currency,amount,description,True)
+		return result_json['data']['url']
+
+	else :
+		log_db_custom_maker(payer_currency,amount,description,False)
+		flash(result_json)
+		return '/'
+
+
+def invoise_pay_for_ADVcash(amount,currency,shop_id,shop_order_id,
+		description,key) :
+
+	payway = 'advcash_rub'
+
+	SHAREADY = sha256(("%s:%s:%s:%s:%s%s"\
+		%(
+			amount,
+			currency,
+			payway,
+			shop_id, 
+			shop_order_id, 
+			key)
+		).encode('utf-8')).hexdigest()
+
+	response = requests.post('https://core.piastrix.com/invoice/create', json=
+		{
+		"currency": currency,
+		"sign": SHAREADY,
+		"payway": payway,
+		"amount": amount,
+		"shop_id" : shop_id,
+		"shop_order_id": shop_order_id
+		})
+
+	result_json = response.json()
+
+	if result_json['result'] == True :
+		log_db_custom_maker(currency,amount,description,True)
+		return "advcash_submit_card.html", result_json, description
+	else :
+		log_db_custom_maker(currency,amount,description,False)
+		flash(result_json)
+		return '/'
+
+# -------------------------------------------------------------------------
+
+# ------------- ROUTES BLOCK ----------------------------------------------
+
 @app.route('/')
 def index() :
-	items= Item.query.order_by(Item.price).all()
-	return render_template('index.html', data=items)
-
-@app.route('/about')
-def about() :
-	return render_template('about.html')
+	return render_template('index.html')
 
 @app.route('/', methods=['POST'])
 def item_buy():
 
-	obj = LogRecord.query.order_by(LogRecord.id.desc()).first()
+	objdb = LogRecord.query.order_by(LogRecord.id.desc()).first()
 
 	url = ''
 
@@ -70,110 +174,53 @@ def item_buy():
 			flash("Minimus amount is 10.00 .")
 			return redirect('/')
 
+		if float(request.form['amount']) > 100000 :
+			flash("Maximum amount is 100000.00 .")
+			return redirect('/')
 
-		shop_order_id = int(obj.id) + 1
-		print(shop_order_id)
+		if float(len(request.form['description'])) > 500 :
+			flash("Maximum lenth of description is 500 signs .")
+			return redirect('/')
+
+		if objdb != None :
+			shop_order_id = int(objdb.id) + 1
+		else :
+			shop_order_id = 1
 
 		if request.form['cash_selector'] == '978' :
-			SHAREADY = sha256(("%s:%s:%s:%s%s"\
-				%(request.form['amount'], request.form['cash_selector'],\
-					global_shop_id, shop_order_id, secret_key)).encode('utf-8')).hexdigest()
-			params = {
-				'amount' : request.form['amount'],
-				'currency' : request.form['cash_selector'],
-				'shop_id' : global_shop_id,
-				'sign' : SHAREADY,
-				'shop_order_id' : shop_order_id,
-				"description": request.form['description']
-			}
 
-			r = requests.post('https://pay.piastrix.com/ru/pay', params=params)
-			log_db_custom_maker(params['currency'],params['amount'],\
-					request.form['description'],True)
-			url = r.url
+			return redirect(post_pay_for_EUR(
+				request.form['amount'],
+				request.form['cash_selector'],
+				app.config['GLOBAL_SHOP_ID'],
+				shop_order_id,
+				request.form['description'],
+				app.config['SECRET_KEY_FOR_STORE']))
 
 		if request.form['cash_selector'] == '840' :
 
-			SHAREADY = sha256(("%s:%s:%s:%s:%s%s"\
-			 	%(request.form['cash_selector'],request.form['amount'], request.form['cash_selector'],\
-			 		global_shop_id, shop_order_id, secret_key)).encode('utf-8')).hexdigest()
-
-			params = {
-				"description": request.form['description'],
-				"payer_currency": request.form['cash_selector'],
-				"shop_amount": request.form['amount'],
-				"shop_currency": request.form['cash_selector'],
-				'shop_id' : global_shop_id,
-				"shop_order_id": shop_order_id,
-				"sign": SHAREADY
-			}
-		
-			r = requests.post('https://core.piastrix.com/bill/create', json=params)
-			result_json = r.json()
-			if result_json['result'] == True :
-				url = result_json['data']['url']
-				log_db_custom_maker(params['payer_currency'],params['shop_amount'],\
-					request.form['description'],True)
-			else :
-				log_db_custom_maker(params['payer_currency'],params['shop_amount'],\
-					request.form['description'],False)
-				return result_json
+			return redirect(post_pay_for_USD(
+				request.form['amount'],
+				request.form['cash_selector'],
+				request.form['cash_selector'],
+				app.config['GLOBAL_SHOP_ID'],
+				shop_order_id,
+				request.form['description'],
+				app.config['SECRET_KEY_FOR_STORE']))
 
 		if request.form['cash_selector'] == '643' :
 
-			payway = 'advcash_rub'
+			invoise = invoise_pay_for_ADVcash(
+				request.form['amount'],
+				request.form['cash_selector'],
+				app.config['GLOBAL_SHOP_ID'],
+				shop_order_id,
+				request.form['description'],
+				app.config['SECRET_KEY_FOR_STORE'])
 
-			SHAREADY = sha256(("%s:%s:%s:%s:%s%s"\
-				%(request.form['amount'], request.form['cash_selector'],\
-					payway,global_shop_id, shop_order_id, secret_key)).encode('utf-8')).hexdigest()
+			return render_template(invoise[0], json_r = invoise[1], descr = invoise[2])
 
-			params = {
-				"currency": request.form['cash_selector'],
-				"sign": SHAREADY,
-				"payway": payway,
-				"amount": request.form['amount'],
-				"shop_id" : global_shop_id,
-				"shop_order_id": shop_order_id
-				}
-
-			r = requests.post('https://core.piastrix.com/invoice/create', json=params)
-			result_json = r.json()
-			if result_json['result'] == True :
-				log_db_custom_maker(params['currency'],params['amount'],\
-					request.form['description'],True)
-				return render_template("advcash_submit_card.html", json_r=result_json,\
-				 descr=request.form['description'])
-			else :
-				log_db_custom_maker(params['currency'],params['amount'],\
-					request.form['description'],False)
-				return result_json
-
-	else:
-		return redirect('/')
-	
-	return redirect(url)
-
-# --------- add a good ------------------------------------------------------------
-    
-# @app.route('/create', methods=['POST', 'GET'])
-# def create():
-# 	if request.method == "POST":
-# 		title = request.form['title']
-# 		price = request.form['price']
-		
-# 		item = Item(title=title, price=price)
-# 		try:
-# 			db.session.add(item)
-# 			db.session.commit()
-# 			return redirect('/')
-# 		except:
-# 			return "Получилась ошибка"
-# 	else:
-# 		return render_template('create.html')
-
-#	html
-# <a class="btn btn-online-primary" href="/create">Добавать товар</a>
-
+# -------------------------------------------------------------------------
 
 if __name__ == '__main__':
-	app.run(host = '127.0.0.1', debug=True, port = 2828)
+	app.run(host = '127.0.0.1', debug=False, port = 2828)
