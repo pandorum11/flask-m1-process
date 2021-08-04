@@ -24,6 +24,18 @@ db = SQLAlchemy(app)
 # ------------ 1 TABLE FOR LOG --------------------------------------------
 
 class LogRecord(db.Model) :
+
+	"""
+	class LogRecord(db.Model)
+
+	id	|	currency 	|	amount	|	DATETIME	|	description	 |	is_valid
+
+	int |	string		|	Numeric	|	DateTime	|	text <=  300 |	Boolean
+
+
+	Model of database for operations log.
+	"""
+
 	id = db.Column(db.Integer, primary_key=True)
 	currency = db.Column(db.String, default=False, nullable=False)
 	amount = db.Column(db.Numeric, nullable=False)
@@ -39,6 +51,12 @@ class LogRecord(db.Model) :
 # ------------ LOG ORDER MAKER --------------------------------------------
 
 def log_db_custom_maker(currency, amount, description, is_valid) :
+	"""
+	write log record to DB
+	log_db_custom_maker(currency, amount, description, is_valid)
+	is_valid - bool type
+	"""
+
 	logvar = LogRecord(
 		currency=currency,
 		amount=amount,
@@ -54,9 +72,19 @@ def log_db_custom_maker(currency, amount, description, is_valid) :
 
 # -------------------------------------------------------------------------
 
-# ------------- generation requests----------------------------------------
+# ------------- GENERATE FUNCS BLOCK --------------------------------------
 
-def post_pay_for_EUR(amount,currency,shop_id,shop_order_id,description,key) :
+def post_pay_for_EUR(amount,currency,shop_id,shop_order_id,\
+		description,key) -> str :
+
+	"""
+	returns string with valid url after generating SHA245 by rule :
+
+	amount:currency:shop_id:shop_order_idkey
+
+	and made POST request on url :
+	https://pay.piastrix.com/ru/pay
+	"""
 
 	SHAREADY = sha256(("%s:%s:%s:%s%s"
 		%(
@@ -66,6 +94,7 @@ def post_pay_for_EUR(amount,currency,shop_id,shop_order_id,description,key) :
 			shop_order_id,
 			key)
 		).encode('utf-8')).hexdigest()
+
 
 	response = requests.post('https://pay.piastrix.com/ru/pay', params=
 		{
@@ -82,8 +111,17 @@ def post_pay_for_EUR(amount,currency,shop_id,shop_order_id,description,key) :
 	return response.url
 
 
-def post_pay_for_USD(amount,payer_currency,shop_currency,shop_id,
-		shop_order_id,description,key) :
+def post_bill_for_USD(amount,payer_currency,shop_currency,shop_id,
+		shop_order_id,description,key) -> str:
+
+	"""
+	returns string with valid url after generating SHA245 by rule :
+
+	payer_currency:amount:shop_currency:shop_id:shop_order_idkey
+
+	and made POST request on url :
+	https://core.piastrix.com/bill/create
+	"""
 
 	SHAREADY = sha256(("%s:%s:%s:%s:%s%s"
 		%(
@@ -120,6 +158,17 @@ def post_pay_for_USD(amount,payer_currency,shop_currency,shop_id,
 
 def invoise_pay_for_ADVcash(amount,currency,shop_id,shop_order_id,
 		description,key) :
+
+	"""
+	payway = 'advcash_rub'
+
+	returns tuple with valid url after generating SHA245 by rule :
+
+	amount:currency:payway:shop_id:shop_order_idkey
+
+	and made POST request on url :
+	https://core.piastrix.com/invoice/create
+	"""
 
 	payway = 'advcash_rub'
 
@@ -189,6 +238,8 @@ def item_buy():
 		else :
 			shop_order_id = 1
 
+		# ---- CONDITION FOR EUR WITH CODE 978
+
 		if request.form['cash_selector'] == '978' :
 
 			return redirect(post_pay_for_EUR(
@@ -199,9 +250,11 @@ def item_buy():
 				request.form['description'],
 				app.config['SECRET_KEY_FOR_STORE']))
 
+		# ---- CONDITION FOR USD WITH CODE 840
+
 		if request.form['cash_selector'] == '840' :
 
-			return redirect(post_pay_for_USD(
+			return redirect(post_bill_for_USD(
 				request.form['amount'],
 				request.form['cash_selector'],
 				request.form['cash_selector'],
@@ -209,6 +262,8 @@ def item_buy():
 				shop_order_id,
 				request.form['description'],
 				app.config['SECRET_KEY_FOR_STORE']))
+
+		# ---- CONDITION FOR RUR WITH CODE 643
 
 		if request.form['cash_selector'] == '643' :
 
