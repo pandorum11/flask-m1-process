@@ -75,7 +75,7 @@ def log_db_custom_maker(currency, amount, description, is_valid) :
 
 # ------------- GENERATE FUNCS BLOCK --------------------------------------
 
-def post_pay_for_EUR(amount,currency,shop_id,shop_order_id,\
+def post_pay_for_EUR(amount,currency,shop_id,shop_order_id,
 		description,key) -> str :
 
 	"""
