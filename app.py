@@ -1,7 +1,7 @@
+import requests
 from flask import Flask, render_template, request, redirect, flash
 from flask_sqlalchemy import SQLAlchemy
 from hashlib import sha256
-import requests
 from datetime import datetime
 
 # -------------------------------------------------------------------------
@@ -23,7 +23,7 @@ db = SQLAlchemy(app)
 
 # ------------ 1 TABLE FOR LOG --------------------------------------------
 
-class LogRecord(db.Model) :
+class LogRecord(db.Model):
 
 	"""
 
@@ -43,13 +43,13 @@ class LogRecord(db.Model) :
 	is_valid = db.Column(db.Boolean, default=True)
 
 	def __repr__(self):
-		return f"Note : {self.id}"
+		return f"Note: {self.id}"
 
 # -------------------------------------------------------------------------
 
 # ------------ LOG ORDER MAKER --------------------------------------------
 
-def log_db_custom_maker(currency, amount, description, is_valid) :
+def log_db_custom_maker(currency, amount, description, is_valid):
 
 	"""
 	write log record to DB
@@ -75,14 +75,14 @@ def log_db_custom_maker(currency, amount, description, is_valid) :
 # ------------- GENERATE FUNCS BLOCK --------------------------------------
 
 def post_pay_for_EUR(amount,currency,shop_id,shop_order_id,
-		description,key) -> str :
+		description,key) -> str:
 
 	"""
-	returns string with valid url after generating SHA245 by rule :
+	returns string with valid url after generating SHA245 by rule:
 
 	amount:currency:shop_id:shop_order_idkey
 
-	and made POST request on url :
+	and made POST request on url:
 	https://pay.piastrix.com/ru/pay
 	"""
 
@@ -98,11 +98,11 @@ def post_pay_for_EUR(amount,currency,shop_id,shop_order_id,
 
 	response = requests.post('https://pay.piastrix.com/ru/pay', params=
 		{
-			'amount' : amount,
-			'currency' : currency,
-			'shop_id' : shop_id,
-			'sign' : SHAREADY,
-			'shop_order_id' : shop_order_id,
+			'amount': amount,
+			'currency': currency,
+			'shop_id': shop_id,
+			'sign': SHAREADY,
+			'shop_order_id': shop_order_id,
 			"description": description
 		})
 
@@ -115,11 +115,11 @@ def post_bill_for_USD(amount,payer_currency,shop_currency,shop_id,
 		shop_order_id,description,key) -> str:
 
 	"""
-	returns string with valid url after generating SHA245 by rule :
+	returns string with valid url after generating SHA245 by rule:
 
 	payer_currency:amount:shop_currency:shop_id:shop_order_idkey
 
-	and made POST request on url :
+	and made POST request on url:
 	https://core.piastrix.com/bill/create
 	"""
 
@@ -139,34 +139,34 @@ def post_bill_for_USD(amount,payer_currency,shop_currency,shop_id,
 			"payer_currency": payer_currency,
 			"shop_amount": amount,
 			"shop_currency": shop_currency,
-			'shop_id' : shop_id,
+			'shop_id': shop_id,
 			"shop_order_id": shop_order_id,
 			"sign": SHAREADY	
 		})
 
 	result_json = response.json()
 
-	if result_json['result'] == True :
+	if result_json['result'] == True:
 		log_db_custom_maker(payer_currency,amount,description,True)
 		return result_json['data']['url']
 
-	else :
+	else:
 		log_db_custom_maker(payer_currency,amount,description,False)
 		flash(result_json)
 		return '/'
 
 
 def invoise_pay_for_ADVcash(amount,currency,shop_id,shop_order_id,
-		description,key) :
+		description,key):
 
 	"""
 	payway = 'advcash_rub'
 
-	returns tuple with valid url after generating SHA245 by rule :
+	returns tuple with valid url after generating SHA245 by rule:
 
 	amount:currency:payway:shop_id:shop_order_idkey
 
-	and made POST request on url :
+	and made POST request on url:
 	https://core.piastrix.com/invoice/create
 	"""
 
@@ -188,17 +188,17 @@ def invoise_pay_for_ADVcash(amount,currency,shop_id,shop_order_id,
 		"sign": SHAREADY,
 		"payway": payway,
 		"amount": amount,
-		"shop_id" : shop_id,
+		"shop_id": shop_id,
 		"shop_order_id": shop_order_id
 		})
 
 	result_json = response.json()
 
-	if result_json['result'] == True :
+	if result_json['result'] == True:
 		log_db_custom_maker(currency,amount,description,True)
 		return "advcash_submit_card.html", result_json, description
 
-	else :
+	else:
 		log_db_custom_maker(currency,amount,description,False)
 		flash(result_json)
 		return '/'
@@ -210,7 +210,6 @@ def invoise_pay_for_ADVcash(amount,currency,shop_id,shop_order_id,
 @app.route('/', methods=['POST', 'GET'])
 def item_buy():
 
-	
 	if request.method == "GET":
 
 		return render_template("index.html")
@@ -219,28 +218,28 @@ def item_buy():
 
 		objdb = LogRecord.query.order_by(LogRecord.id).first()
 
-		if float(request.form['amount']) < 10 :
+		if float(request.form['amount']) < 10:
 			flash("Minimus amount is 10.00 .")
 			return redirect('/')
 
-		if float(request.form['amount']) > 100000 :
+		if float(request.form['amount']) > 100000:
 			flash("Maximum amount is 100000.00 .")
 			return redirect('/')
 
-		if float(len(request.form['description'])) > 500 :
+		if float(len(request.form['description'])) > 500:
 			flash("Maximum lenth of description is 500 signs .")
 			return redirect('/')
 
 		# valve for empty DB
 
-		if objdb != None :
+		if objdb != None:
 			shop_order_id = int(objdb.id) + 1
-		else :
+		else:
 			shop_order_id = 1
 
 		# ---- CONDITION FOR EUR WITH CODE 978
 
-		if request.form['cash_selector'] == '978' :
+		if request.form['cash_selector'] == '978':
 
 			return redirect(post_pay_for_EUR(
 				request.form['amount'],
@@ -252,7 +251,7 @@ def item_buy():
 
 		# ---- CONDITION FOR USD WITH CODE 840
 
-		if request.form['cash_selector'] == '840' :
+		if request.form['cash_selector'] == '840':
 
 			return redirect(post_bill_for_USD(
 				request.form['amount'],
@@ -265,7 +264,7 @@ def item_buy():
 
 		# ---- CONDITION FOR RUR WITH CODE 643
 
-		if request.form['cash_selector'] == '643' :
+		if request.form['cash_selector'] == '643':
 
 			invoise = invoise_pay_for_ADVcash(
 				request.form['amount'],
