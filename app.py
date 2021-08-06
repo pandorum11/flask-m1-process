@@ -157,7 +157,7 @@ def post_bill_for_USD(amount,payer_currency,shop_currency,shop_id,
 
 
 def invoise_pay_for_ADVcash(amount,currency,shop_id,shop_order_id,
-		description,key):
+		description,key)->tuple:
 
 	"""
 	payway = 'advcash_rub'
