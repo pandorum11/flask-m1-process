@@ -146,7 +146,7 @@ def post_bill_for_USD(amount,payer_currency,shop_currency,shop_id,
 
 	result_json = response.json()
 
-	if result_json['result'] == True:
+	if result_json['result']:
 		log_db_custom_maker(payer_currency,amount,description,True)
 		return result_json['data']['url']
 
@@ -194,7 +194,7 @@ def invoise_pay_for_ADVcash(amount,currency,shop_id,shop_order_id,
 
 	result_json = response.json()
 
-	if result_json['result'] == True:
+	if result_json['result']:
 		log_db_custom_maker(currency,amount,description,True)
 		return "advcash_submit_card.html", result_json, description
 
